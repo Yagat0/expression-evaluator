@@ -134,7 +134,13 @@ double evaluate(const std::string& expression) {
         const std::string& token = postfix_expr.top();
 
         if(is_number(token)){
-            result.push(std::stod(token));
+            try {
+                result.push(std::stod(token));
+            } catch (const std::invalid_argument& e) {
+                throw std::runtime_error("Invalid number: " + token + "\n");
+            } catch (const std::out_of_range& e) {
+                throw std::runtime_error("Number out of range: " + token + "\n");
+            }
         } else {
             if (result.size() < 2) {
                 throw std::runtime_error("Invalid expression: not enough operands");
@@ -150,6 +156,5 @@ double evaluate(const std::string& expression) {
     if (result.size() != 1) {
         throw std::runtime_error("Invalid expression: too many operands");
     }
-
     return result.top();
 }
