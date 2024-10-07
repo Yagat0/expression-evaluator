@@ -30,6 +30,11 @@ std::stack<std::string> infix_to_postfix(const std::string& expression) {
             }
             previous_num = true;
         } else if (current_char != ' ') { // character is arithmetic or unary operator
+            if(i - 1 < 0 || !isdigit(expression[i-1])) { // unary operator
+                current_num+=current_char;
+                continue;
+            }
+
             // push parsed number to output stack
             if (previous_num) {
                 output.push(current_num);
