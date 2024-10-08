@@ -25,7 +25,7 @@ enum class Operator {
 };
 
 // priorities and left associativity of arithmetic operators
-const std::unordered_map<std::string, OperatorProperty> operator_properties{
+const std::unordered_map<std::string, OperatorProperty> operator_properties {
         {"+", {1, true}},
         {"-", {1, true}},
         {"*", {2, true}},
@@ -75,7 +75,7 @@ bool is_number(const std::string& s);
 Operator operator_to_enum(const std::string& op);
 
 // applies an operation on the first two top operands from the result stack
-void apply_operation(std::stack<double>& result, Operator op);
+void apply_operator(std::stack<double>& result, Operator op);
 
 // converts an expression to postfix notation and then evaluates it
 double evaluate(const std::string& expression);

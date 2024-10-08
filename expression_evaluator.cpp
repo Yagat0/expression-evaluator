@@ -2,6 +2,9 @@
 
 // checks whether op1 has lower precedence compared to op2 or is left associative
 bool has_lower_precedence(const std::string& op1_str, const std::string& op2_str) {
+    if (op1_str == "(" || op2_str == "(" || op1_str == ")" || op2_str == ")") {
+        return false;
+    }
     const OperatorProperty& op1 = operator_properties.at(op1_str);
     const OperatorProperty& op2 = operator_properties.at(op2_str);
     if(op1.priority == op2.priority) {
@@ -10,28 +13,53 @@ bool has_lower_precedence(const std::string& op1_str, const std::string& op2_str
     return op1.priority < op2.priority;
 }
 
-// converts expression from infix to postfix notation using shunting yard algorithm
+// converts an expression from infix to postfix notation using shunting yard algorithm
 // https://en.wikipedia.org/wiki/Shunting_yard_algorithm
 std::stack<std::string> infix_to_postfix(const std::string& expression) {
     std::stack<std::string> output;
     std::stack<std::string> Operators;
 
     std::string current_num;
-    bool previous_num = false; // tracks if last character was a number
+    bool previous_num = false; // tracks if last character was a number, used for number parsing
 
     for (std::size_t i = 0; i < expression.length(); ++i) {
         const char current_char = expression[i];
 
-        if (isdigit(current_char) || current_char == '.' || current_char == ',') { // parse number
+        // parse number
+        if (isdigit(current_char) || current_char == '.' || current_char == ',') {
             if(current_char == ',') { // is decimal point
                 current_num += '.';
             } else { // is number
                 current_num += current_char;
             }
             previous_num = true;
-        } else if (current_char != ' ') { // character is arithmetic or unary operator
+
+        // parenthesis support
+        } else if (current_char == '(') {
+            Operators.emplace("(");
+        } else if (current_char == ')') {
+            // push last number in parentheses
+            if (!current_num.empty()) {
+                output.push(current_num);
+                current_num.clear();
+            }
+
+            // push operators to output until '(' is encountered
+            while (!Operators.empty() && Operators.top() != "(") {
+                output.push(Operators.top());
+                Operators.pop();
+            }
+
+            if (!Operators.empty()) {
+                Operators.pop(); // Remove '(' from the stack
+            } else {
+                throw std::runtime_error("Mismatched parentheses");
+            }
+
+        // character is an arithmetic or unary operator
+        } else if (current_char != ' ') {
             if(i - 1 < 0 || !isdigit(expression[i-1])) { // unary operator
-                current_num+=current_char;
+                current_num += current_char;
                 continue;
             }
 
@@ -44,7 +72,7 @@ std::stack<std::string> infix_to_postfix(const std::string& expression) {
 
             // handle operators
             const std::string op (1, current_char);
-            while (!Operators.empty() && has_lower_precedence(op, Operators.top())) {
+            while (!Operators.empty() && Operators.top() != "(" && has_lower_precedence(op, Operators.top())) {
                 output.push(Operators.top());
                 Operators.pop();
             }
@@ -52,7 +80,7 @@ std::stack<std::string> infix_to_postfix(const std::string& expression) {
         }
     }
 
-    // release last number if present
+    // push last parsed number to output if present
     if (!current_num.empty()) {
         output.push(current_num);
     }
@@ -73,7 +101,7 @@ bool is_number(const std::string& s)
 }
 
 // converts arithmetic operator to an Operator enum
-Operator Operator_to_enum(const std::string& op) {
+Operator operator_to_enum(const std::string& op) {
     if(op == "+")
         return Operator::Addition;
     if(op == "-")
@@ -88,16 +116,14 @@ Operator Operator_to_enum(const std::string& op) {
 }
 
 // applies an Operator on the first two top operands from the result stack
-void apply_Operator(std::stack<double>& result, Operator op) {
+void apply_operator(std::stack<double>& result, Operator op) {
     if (result.size() < 2) {
         throw std::runtime_error("Not enough operands to perform operation");
     }
-
-    double num1, num2;
     
-    num1 = result.top();
+    double num1 = result.top();
     result.pop();
-    num2 = result.top();
+    double num2 = result.top();
     result.pop();
 
     switch(op) {
@@ -111,6 +137,8 @@ void apply_Operator(std::stack<double>& result, Operator op) {
             result.push(num2*num1);
             break;
         case Operator::Division:
+            if(num1 == 0.0)
+                throw std::runtime_error("Division by zero");
             result.push(num2/num1);
             break;
         case Operator::Exponentiation:
@@ -123,12 +151,11 @@ void apply_Operator(std::stack<double>& result, Operator op) {
 
 // converts an expression to postfix notation and then evaluates it
 double evaluate(const std::string& expression) {
+    if(expression.empty())
+        throw std::runtime_error("Empty expression");
+
     std::stack<std::string> postfix_expr = infix_to_postfix(expression);
     std::stack<double> result;
-
-    if (postfix_expr.empty()) {
-        throw std::runtime_error("Empty expression");
-    }
 
     while(!postfix_expr.empty()) {
         const std::string& token = postfix_expr.top();
@@ -147,8 +174,8 @@ double evaluate(const std::string& expression) {
             }
 
             Operator op;
-               op = Operator_to_enum(token);
-            apply_Operator(result, op);
+               op = operator_to_enum(token);
+            apply_operator(result, op);
         }
         postfix_expr.pop();
     }
