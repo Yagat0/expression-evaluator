@@ -33,23 +33,6 @@ const std::unordered_map<std::string, OperatorProperty> operator_properties {
         {"^", {3, false}},
 };
 
-// reverses the order in a given stack
-template<typename T>
-void reverse_stack(std::stack<T>& stack) {
-    std::stack<T> temp_stack;
-    std::queue<T> queue;
-
-    while (!stack.empty()) {
-        queue.push(stack.top());
-        stack.pop();
-    }
-
-    while (!queue.empty()) {
-        stack.push(queue.front());
-        queue.pop();
-    }
-}
-
 // outputs the elements of a stack to an ostream
 template<typename T>
 std::ostream& operator<<(std::ostream& os, std::stack<T> my_stack)
@@ -66,7 +49,7 @@ std::ostream& operator<<(std::ostream& os, std::stack<T> my_stack)
 bool has_lower_precedence(const std::string& current_operation, const std::string& last_stack_operation);
 
 // converts expression from infix to postfix notation
-std::stack<std::string> infix_to_postfix(const std::string& expression);
+std::queue<std::string> infix_to_postfix(const std::string& expression);
 
 // checks whether string is a number
 bool is_number(const std::string& s);

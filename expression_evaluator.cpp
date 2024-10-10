@@ -15,13 +15,11 @@ bool has_lower_precedence(const std::string& op1_str, const std::string& op2_str
 
 // converts an expression from infix to postfix notation using shunting yard algorithm
 // https://en.wikipedia.org/wiki/Shunting_yard_algorithm
-std::stack<std::string> infix_to_postfix(const std::string& expression) {
-    std::stack<std::string> output;
-    std::stack<std::string> Operators;
+std::queue<std::string> infix_to_postfix(const std::string& expression) {
+    std::queue<std::string> output;
+    std::stack<std::string> operators;
 
     std::string current_num;
-    bool previous_num = false; // tracks if last character was a number, used for number parsing
-
     for (std::size_t i = 0; i < expression.length(); ++i) {
         const char current_char = expression[i];
 
@@ -32,11 +30,10 @@ std::stack<std::string> infix_to_postfix(const std::string& expression) {
             } else { // is number
                 current_num += current_char;
             }
-            previous_num = true;
 
         // parenthesis support
         } else if (current_char == '(') {
-            Operators.emplace("(");
+            operators.emplace("(");
         } else if (current_char == ')') {
             // push last number in parentheses
             if (!current_num.empty()) {
@@ -45,38 +42,37 @@ std::stack<std::string> infix_to_postfix(const std::string& expression) {
             }
 
             // push operators to output until '(' is encountered
-            while (!Operators.empty() && Operators.top() != "(") {
-                output.push(Operators.top());
-                Operators.pop();
+            while (!operators.empty() && operators.top() != "(") {
+                output.push(operators.top());
+                operators.pop();
             }
 
-            if (!Operators.empty()) {
-                Operators.pop(); // Remove '(' from the stack
+            if (!operators.empty()) {
+                operators.pop(); // remove '(' from the operators stack
             } else {
                 throw std::runtime_error("Mismatched parentheses");
             }
 
         // character is an arithmetic or unary operator
         } else if (current_char != ' ') {
-            if(i - 1 < 0 || !isdigit(expression[i-1])) { // unary operator
+            if(i - 1 < 0 || !isdigit(expression[i-1]) && expression[i-1] != ')') { // unary operator
                 current_num += current_char;
                 continue;
             }
 
             // push parsed number to output stack
-            if (previous_num) {
+            if (!current_num.empty()) {
                 output.push(current_num);
                 current_num.clear();
-                previous_num = false;
             }
 
             // handle operators
             const std::string op (1, current_char);
-            while (!Operators.empty() && Operators.top() != "(" && has_lower_precedence(op, Operators.top())) {
-                output.push(Operators.top());
-                Operators.pop();
+            while (!operators.empty() && operators.top() != "(" && has_lower_precedence(op, operators.top())) {
+                output.push(operators.top());
+                operators.pop();
             }
-            Operators.push(op);
+            operators.push(op);
         }
     }
 
@@ -86,11 +82,10 @@ std::stack<std::string> infix_to_postfix(const std::string& expression) {
     }
 
     // push the rest of operators
-    while (!Operators.empty()) {
-        output.push(Operators.top());
-        Operators.pop();
+    while (!operators.empty()) {
+        output.push(operators.top());
+        operators.pop();
     }
-    reverse_stack(output); // reverse the output stack to get correct order
     return output;
 }
 
@@ -154,11 +149,11 @@ double evaluate(const std::string& expression) {
     if(expression.empty())
         throw std::runtime_error("Empty expression");
 
-    std::stack<std::string> postfix_expr = infix_to_postfix(expression);
+    std::queue<std::string> postfix_expr = infix_to_postfix(expression);
     std::stack<double> result;
 
     while(!postfix_expr.empty()) {
-        const std::string& token = postfix_expr.top();
+        const std::string& token = postfix_expr.front();
 
         if(is_number(token)){
             try {
