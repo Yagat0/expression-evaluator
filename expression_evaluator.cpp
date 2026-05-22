@@ -55,7 +55,7 @@ std::queue<std::string> infix_to_postfix(const std::string& expression) {
 
         // character is an arithmetic or unary operator
         } else if (current_char != ' ') {
-            if(i - 1 < 0 || !isdigit(expression[i-1]) && expression[i-1] != ')') { // unary operator
+            if(i == 0 || !isdigit(expression[i-1]) && expression[i-1] != ')') { // unary operator
                 current_num += current_char;
                 continue;
             }
@@ -92,7 +92,8 @@ std::queue<std::string> infix_to_postfix(const std::string& expression) {
 // checks whether string is a number
 bool is_number(const std::string& s)
 {
-    return s.find_first_of("0123456789.") != std::string::npos;
+    if (s.empty()) return false;
+    return std::isdigit(s.back());
 }
 
 // converts arithmetic operator to an Operator enum
